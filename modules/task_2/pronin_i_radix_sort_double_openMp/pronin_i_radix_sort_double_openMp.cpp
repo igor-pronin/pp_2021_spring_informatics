@@ -1,4 +1,5 @@
 // Copyright 2021 Pronin Igor
+#include <omp.h>
 #include "../../../modules/task_2/pronin_i_radix_sort_double_openMp/pronin_i_radix_sort_double_openMp.h"
 void RandVec(double* vec, int left, int right, int size) {
     std::mt19937 gen(time(0));
@@ -80,11 +81,15 @@ void SeqSort(double* inp, double* out, int size, int threads) {
     offset[0] = 0;
     for (int i = 1; i < threads; i++)
         offset[i] = offset[i - 1] + len[i - 1];
+    double start = omp_get_wtime();
     for (int i = 0; i < threads; i++)
         SortAll(inp + offset[i], out, len[i]);
+    double end = omp_get_wtime();
+    std::cout << "Seq_part_1 " << end - start << std::endl;
     int povtor = threads / 2 + threads % 2;
     int num = 2;
     int step = 1;
+    double start1 = omp_get_wtime();
     for (int j = 0; j < povtor; j++) {
         for (int i = 0; i < threads; i++)
             if (i % num == 0 && i + step < threads) {
@@ -103,6 +108,8 @@ void SeqSort(double* inp, double* out, int size, int threads) {
         num *= 2;
         step *= 2;
     }
+    double end1 = omp_get_wtime();
+    std::cout << "Seq_part_2 " << end1 - start1 << std::endl;
     for (int i = 0; i < size; i++)
         out[i] = inp[i];
 }
@@ -117,16 +124,23 @@ void ParSort(double* inp, double* out, int size, int threads) {
     offset[0] = 0;
     for (int i = 1; i < threads; i++)
         offset[i] = offset[i - 1] + len[i - 1];
+    double start = omp_get_wtime();
 #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < threads; i++) {
         double* in = new double[size];
         SortAll(inp + offset[i], in, len[i]);
     }
+    double end = omp_get_wtime();
+    std::cout << "Par_part_1 " << end - start << std::endl;
     int povtor = threads / 2 + threads % 2;
     int num = 2;
     int step = 1;
+    double start1 = omp_get_wtime();
+//#pragma omp parallel
     for (int j = 0; j < povtor; j++) {
-#pragma omp parallel for num_threads(threads)
+        //std::cout << omp_get_num_threads();
+//#pragma omp for
+#pragma omp parallel for
         for (int i = 0; i < threads; i++)
             if (i % num == 0 && i + step < threads) {
                 double* part = new double[size];
@@ -144,6 +158,8 @@ void ParSort(double* inp, double* out, int size, int threads) {
         num *= 2;
         step *= 2;
     }
+    double end1 = omp_get_wtime();
+    std::cout << "Par_part_2 " << end1 - start1 << std::endl;
     for (int i = 0; i < size; i++)
         out[i] = inp[i];
 }
